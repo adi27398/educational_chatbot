@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  IMAGE_NAME: rasa-streamlit-bot
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -23,11 +27,32 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/rasa-streamlit-bot:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # Optional: deploy step if you're using a service like Render, Railway, GCP, etc.
+      # Add your deployment steps here
+      # Example for Kubernetes:
+      # - name: Deploy to Kubernetes
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      #   run: |
+      #     kubectl set image deployment/chatbot chatbot=${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
