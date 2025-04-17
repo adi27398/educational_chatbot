@@ -30,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/rasa-streamlit-bot
+          images: 639233/rasa-streamlit-bot
           tags: |
             type=ref,event=branch
             type=ref,event=pr
