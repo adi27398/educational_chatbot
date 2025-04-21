@@ -30,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: 639233/educational_chatbot
+          images: 639233/rasa-chatbot
           tags: |
             type=ref,event=branch
             type=ref,event=pr
